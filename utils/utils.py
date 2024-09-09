@@ -16,6 +16,9 @@ from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, accuracy_s
 from sklearn.utils.multiclass import unique_labels
 from sklearn.utils import resample
 from keras.layers import Conv2D, MaxPooling2D, Dense, Dropout, Flatten, BatchNormalization
+from tensorflow.keras.callbacks import EarlyStopping
+from tensorflow.keras.optimizers import Adam
+
 
 folder = '/home/ubuntu/MRI_Brain_Tumor/Train/'
 print(folder)
@@ -150,8 +153,12 @@ model.add(Dense(32, activation='relu'))
 model.add(Dropout(0.2))
 model.add(Dense(4, activation='softmax'))
 
-
 model.summary()
 
+optimizer = Adam(learning_rate=0.001)
+model.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['accuracy'])
+
+early_stopping = EarlyStopping(monitor='val_loss', patience=20)
+history = model.fit(balanced_x_train, balanced_y_train, validation_split= 0.2, epochs=150, callbacks=[early_stopping])
 
 
