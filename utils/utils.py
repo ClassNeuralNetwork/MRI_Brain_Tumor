@@ -14,6 +14,7 @@ from tensorflow.keras.preprocessing.image import ImageDataGenerator, array_to_im
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, accuracy_score, precision_score, recall_score, f1_score
 from sklearn.utils.multiclass import unique_labels
+from sklearn.utils import resample
 
 folder = '/home/brunopaiva/MRI_Brain_Tumor/MRI_Brain_Tumor/Train/'
 print(folder)
@@ -84,4 +85,15 @@ plt.show()
 nclasses = len(set(y_dataset))
 print(num_classes)
 
-y_dataset = to_categorical(y_dataset, nclasses)
+y_dataset_ = to_categorical(y_dataset, nclasses)
+
+dataset_trimmed = dataset[:len(y_dataset_)]
+
+x_train, x_test, y_train, y_test = train_test_split(dataset_trimmed, y_dataset_, test_size=0.2)
+
+print("Train set size: {0}, Test set size: {1}".format(len(x_train), len(x_test)))
+
+balanced_x_train = []
+balanced_y_train = []
+
+majority_samples = 7000
