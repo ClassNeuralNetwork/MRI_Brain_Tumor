@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import itertools
 import scipy.stats
 import tensorflow as tf
+import pandas as pd
 from keras import applications, optimizers, Input
 from tensorflow.keras.models import Sequential, Model
 from keras.layers import Activation, Dropout, Flatten, Dense, Conv2D, MaxPooling2D
@@ -18,6 +19,7 @@ from sklearn.utils import resample
 from keras.layers import Conv2D, MaxPooling2D, Dense, Dropout, Flatten, BatchNormalization
 from tensorflow.keras.callbacks import EarlyStopping
 from tensorflow.keras.optimizers import Adam
+from keras.models import load_model
 
 
 folder = '/home/ubuntu/MRI_Brain_Tumor/Train/'
@@ -160,5 +162,105 @@ model.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['ac
 
 early_stopping = EarlyStopping(monitor='val_loss', patience=20)
 history = model.fit(balanced_x_train, balanced_y_train, validation_split= 0.2, epochs=50, callbacks=[early_stopping])
+
+history_salvo = pd.DataFrame(history.history)
+history_salvo.to_csv('history_salvo90valAcc.csv')
+
+model_json = model.to_json()
+with open("MRI_modelcnn90valAcc.json", "w") as json_file:
+    json_file.write(model_json)
+
+model.save('modelo_cnn90valAcc.h5')
+
+modelo_carregado = load_model('/home/ubuntu/MRI_Brain_Tumor/utils/modelo_cnn90valAcc..h5')
+
+val_accuracy = history.history['val_accuracy']
+mean_val_accuracy = np.mean(val_accuracy)
+print("Média da validação de acurácia:", mean_val_accuracy)
+
+plt.plot(history['loss'])
+plt.plot(history['val_loss'])
+
+plt.ylabel('Perda')
+plt.xlabel('Época')
+plt.legend(['Treinamento', 'Validação'], loc='upper right')
+plt.show()
+
+plt.plot(history['accuracy'])
+plt.plot(history['val_accuracy'])
+plt.title('Acurácia')
+plt.ylabel('Acurácia')
+plt.xlabel('Épocas')
+plt.legend(['Treinamento', 'Validação'], loc='upper left')
+plt.grid(True)
+plt.show()
+plt.close()
+
+preds = modelo_carregado.predict(x_test)
+
+def plot_confusion_matrix(
+        cm,
+        classes,
+        normalize=False,
+        title='Confusion matrix',
+        cmap=plt.cm.Blues
+    ):
+
+    plt.imshow(cm, interpolation='nearest', cmap=cmap)
+    tick_marks = np.arange(len(classes))
+    plt.xticks(tick_marks, classes, rotation=45)
+    plt.yticks(tick_marks, classes)
+
+    if normalize:
+        cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+        print("Normalized confusion matrix")
+    else:
+        print('Confusion matrix, without normalization')
+
+    print(cm)
+
+    thresh = cm.max() / 2.
+    for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
+        plt.text(j, i, cm[i, j],
+                 horizontalalignment="center",
+                 color="white" if cm[i, j] > thresh else "black")
+
+    plt.tight_layout()
+    plt.ylabel('Classe real')
+    plt.xlabel('Classe predita')
+
+y_test_ = [np.argmax(x) for x in y_test]
+preds_ = [np.argmax(x) for x in preds]
+
+cm = confusion_matrix(y_test_, preds_)
+plot_confusion_matrix(cm, classes=['Glioma', 'Meningloma', 'No Tumor', 'Pituitary'], title='Confusion matrix')
+plt.show()
+plt.close()
+
+# Calcular acurácia
+accuracy = accuracy_score(y_test_, preds_)
+print("Acurácia:", accuracy*float(100.0), "%")
+
+# Calcular precisão
+precision = precision_score(y_test_, preds_, average='macro')
+print("Precisão:", precision*float(100.0), "%")
+
+# Calcular recall
+recall = recall_score(y_test_, preds_, average='macro')
+print("Recall:", recall*float(100.0), "%")
+
+# Calcular F1 score
+f1 = f1_score(y_test_, preds_, average='macro')
+print("F1-score:", f1*float(100.0), "%")
+
+n = 4
+for t in range(4):
+    plt.figure(figsize=(10,10))
+    for i in range(n*t, n*(t+1)):
+        plt.subplot(1, n, i + 1 - n*t)
+        plt.imshow(cv2.cvtColor(x_test[i], cv2.COLOR_BGR2RGB), cmap='gray')
+        plt.title('Real: {}\nPredito: {}'.format(classes[np.argmax(y_test[i])], classes[np.argmax(preds[i])]))
+        plt.axis('off')
+    plt.show()
 
 
