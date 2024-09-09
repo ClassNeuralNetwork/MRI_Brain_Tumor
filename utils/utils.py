@@ -97,3 +97,33 @@ balanced_x_train = []
 balanced_y_train = []
 
 majority_samples = 7000
+
+for class_label in np.unique(y_train.argmax(axis=1)):
+    x_class = x_train[y_train.argmax(axis=1) == class_label]
+    y_class = y_train[y_train.argmax(axis=1) == class_label]
+
+    minority_samples = len(x_class)
+    balanced_x_class, balanced_y_class = resample(x_class, y_class,
+                                                  replace=True,
+                                                  n_samples=majority_samples,
+                                                  random_state=42)
+    balanced_x_train.extend(balanced_x_class)
+    balanced_y_train.extend(balanced_y_class)
+
+balanced_x_train = np.array(balanced_x_train)
+balanced_y_train = np.array(balanced_y_train)
+
+shuffled_indices = np.arange(len(balanced_x_train))
+np.random.shuffle(shuffled_indices)
+balanced_x_train = balanced_x_train[shuffled_indices]
+balanced_y_train = balanced_y_train[shuffled_indices]
+
+print("Tamanho do conjunto de treinamento balanceado:", len(balanced_x_train))
+print("Tamanho do conjunto de teste:", len(x_test))
+
+for class_label in np.unique(balanced_y_train.argmax(axis=1)):
+    count = np.sum(balanced_y_train.argmax(axis=1) == class_label)
+    print(f"Classe {class_label}: {count} amostras")
+
+
+
