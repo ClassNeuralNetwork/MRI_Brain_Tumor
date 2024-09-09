@@ -7,7 +7,7 @@ import itertools
 import scipy.stats
 import tensorflow as tf
 from keras import applications, optimizers, Input
-from keras.models import Sequential, Model
+from tensorflow.keras.models import Sequential, Model
 from keras.layers import Activation, Dropout, Flatten, Dense, Conv2D, MaxPooling2D
 from keras.utils import to_categorical
 from tensorflow.keras.preprocessing.image import ImageDataGenerator, array_to_img, img_to_array, load_img
@@ -15,7 +15,6 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, accuracy_score, precision_score, recall_score, f1_score
 from sklearn.utils.multiclass import unique_labels
 from sklearn.utils import resample
-from keras.models import Sequential
 from keras.layers import Conv2D, MaxPooling2D, Dense, Dropout, Flatten, BatchNormalization
 
 folder = '/home/ubuntu/MRI_Brain_Tumor/Train/'
@@ -149,7 +148,7 @@ model.add(Dropout(0.2))
 model.add(Flatten())
 model.add(Dense(32, activation='relu'))
 model.add(Dropout(0.2))
-model.add(Dense(7, activation='softmax'))
+model.add(Dense(4, activation='softmax'))
 
 
 model.summary()
