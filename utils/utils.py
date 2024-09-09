@@ -159,6 +159,6 @@ optimizer = Adam(learning_rate=0.001)
 model.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['accuracy'])
 
 early_stopping = EarlyStopping(monitor='val_loss', patience=20)
-history = model.fit(balanced_x_train, balanced_y_train, validation_split= 0.2, epochs=150, callbacks=[early_stopping])
+history = model.fit(balanced_x_train, balanced_y_train, validation_split= 0.2, epochs=50, callbacks=[early_stopping])
 
 
