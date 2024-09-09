@@ -80,3 +80,8 @@ for i in range(num_classes):
 # Exibe a figura
 plt.tight_layout()
 plt.show()
+
+nclasses = len(set(y_dataset))
+print(num_classes)
+
+y_dataset = to_categorical(y_dataset, nclasses)
