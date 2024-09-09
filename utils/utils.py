@@ -15,8 +15,10 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, accuracy_score, precision_score, recall_score, f1_score
 from sklearn.utils.multiclass import unique_labels
 from sklearn.utils import resample
+from keras.models import Sequential
+from keras.layers import Conv2D, MaxPooling2D, Dense, Dropout, Flatten, BatchNormalization
 
-folder = '/home/brunopaiva/MRI_Brain_Tumor/MRI_Brain_Tumor/Train/'
+folder = '/home/ubuntu/MRI_Brain_Tumor/Train/'
 print(folder)
 
 image_width = 128
@@ -124,6 +126,33 @@ print("Tamanho do conjunto de teste:", len(x_test))
 for class_label in np.unique(balanced_y_train.argmax(axis=1)):
     count = np.sum(balanced_y_train.argmax(axis=1) == class_label)
     print(f"Classe {class_label}: {count} amostras")
+
+model = Sequential()
+
+model.add(BatchNormalization(input_shape=(image_height, image_width, 1)))
+model.add(Conv2D(512, (3,3), padding='same', activation='relu'))
+model.add(MaxPooling2D(pool_size=(2, 2), strides=(2, 2)))
+model.add(Dropout(0.2))
+
+model.add(Conv2D(256, (3,3), padding='same', activation='relu'))
+model.add(MaxPooling2D(pool_size=(2, 2), strides=(2, 2)))
+model.add(Dropout(0.2))
+
+model.add(Conv2D(128, (3, 3), padding='same', activation='relu'))
+model.add(MaxPooling2D(pool_size=(2, 2), strides=(2, 2)))
+model.add(Dropout(0.2))
+
+model.add(Conv2D(64, (3,3), padding='same', activation='relu'))
+model.add(MaxPooling2D(pool_size=(2, 2), strides=(2, 2)))
+model.add(Dropout(0.2))
+
+model.add(Flatten())
+model.add(Dense(32, activation='relu'))
+model.add(Dropout(0.2))
+model.add(Dense(7, activation='softmax'))
+
+
+model.summary()
 
 
 
