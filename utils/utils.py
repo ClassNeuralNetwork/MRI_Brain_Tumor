@@ -22,7 +22,7 @@ from tensorflow.keras.optimizers import Adam
 from keras.models import load_model
 
 
-folder = '/home/ubuntu/MRI_Brain_Tumor/Train/'
+folder = '/home/bvpdsilva//MRI_Brain_Tumor/Train/'
 print(folder)
 
 image_width = 128
@@ -102,7 +102,7 @@ print("Train set size: {0}, Test set size: {1}".format(len(x_train), len(x_test)
 balanced_x_train = []
 balanced_y_train = []
 
-majority_samples = 7000
+majority_samples = 700
 
 for class_label in np.unique(y_train.argmax(axis=1)):
     x_class = x_train[y_train.argmax(axis=1) == class_label]
@@ -151,8 +151,6 @@ model.add(MaxPooling2D(pool_size=(2, 2), strides=(2, 2)))
 model.add(Dropout(0.2))
 
 model.add(Flatten())
-model.add(Dense(32, activation='relu'))
-model.add(Dropout(0.2))
 model.add(Dense(4, activation='softmax'))
 
 model.summary()
@@ -161,7 +159,7 @@ optimizer = Adam(learning_rate=0.001)
 model.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['accuracy'])
 
 early_stopping = EarlyStopping(monitor='val_loss', patience=20)
-history = model.fit(balanced_x_train, balanced_y_train, validation_split= 0.2, epochs=50, callbacks=[early_stopping])
+history = model.fit(balanced_x_train, balanced_y_train, validation_split= 0.2, batch_size=32, epochs=20, callbacks=[early_stopping])
 
 history_salvo = pd.DataFrame(history.history)
 history_salvo.to_csv('history_salvo90valAcc.csv')
@@ -172,22 +170,22 @@ with open("MRI_modelcnn90valAcc.json", "w") as json_file:
 
 model.save('modelo_cnn90valAcc.h5')
 
-modelo_carregado = load_model('/home/ubuntu/MRI_Brain_Tumor/utils/modelo_cnn90valAcc..h5')
+modelo_carregado = load_model('/home/bvpdsilva/MRI_Brain_Tumor/utils/modelo_cnn90valAcc.h5')
 
 val_accuracy = history.history['val_accuracy']
 mean_val_accuracy = np.mean(val_accuracy)
 print("Média da validação de acurácia:", mean_val_accuracy)
 
-plt.plot(history['loss'])
-plt.plot(history['val_loss'])
+plt.plot(history.history['loss'])
+plt.plot(history.history['val_loss'])
 
 plt.ylabel('Perda')
 plt.xlabel('Época')
 plt.legend(['Treinamento', 'Validação'], loc='upper right')
 plt.show()
 
-plt.plot(history['accuracy'])
-plt.plot(history['val_accuracy'])
+plt.plot(history.history['accuracy'])
+plt.plot(history.history['val_accuracy'])
 plt.title('Acurácia')
 plt.ylabel('Acurácia')
 plt.xlabel('Épocas')
@@ -262,5 +260,3 @@ for t in range(4):
         plt.title('Real: {}\nPredito: {}'.format(classes[np.argmax(y_test[i])], classes[np.argmax(preds[i])]))
         plt.axis('off')
     plt.show()
-
-
