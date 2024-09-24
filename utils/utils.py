@@ -7,6 +7,7 @@ import itertools
 import scipy.stats
 import tensorflow as tf
 import pandas as pd
+import shap
 from keras import applications, optimizers, Input
 from tensorflow.keras.models import Sequential, Model
 from keras.layers import Activation, Dropout, Flatten, Dense, Conv2D, MaxPooling2D
@@ -102,7 +103,7 @@ print("Train set size: {0}, Test set size: {1}".format(len(x_train), len(x_test)
 balanced_x_train = []
 balanced_y_train = []
 
-majority_samples = 700
+majority_samples = 500
 
 for class_label in np.unique(y_train.argmax(axis=1)):
     x_class = x_train[y_train.argmax(axis=1) == class_label]
@@ -158,8 +159,8 @@ model.summary()
 optimizer = Adam(learning_rate=0.001)
 model.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['accuracy'])
 
-early_stopping = EarlyStopping(monitor='val_loss', patience=20)
-history = model.fit(balanced_x_train, balanced_y_train, validation_split= 0.2, batch_size=32, epochs=20, callbacks=[early_stopping])
+early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=20,  restore_best_weights=True)
+history = model.fit(balanced_x_train, balanced_y_train, validation_split= 0.2, batch_size=32, shuffle=True, epochs=50, callbacks=[early_stopping])
 
 history_salvo = pd.DataFrame(history.history)
 history_salvo.to_csv('history_salvo90valAcc.csv')
@@ -168,6 +169,7 @@ model_json = model.to_json()
 with open("MRI_modelcnn90valAcc.json", "w") as json_file:
     json_file.write(model_json)
 
+pd.DataFrame(history.history).to_csv('loss.csv', index=False)
 model.save('modelo_cnn90valAcc.h5')
 
 modelo_carregado = load_model('/home/bvpdsilva/MRI_Brain_Tumor/utils/modelo_cnn90valAcc.h5')
@@ -181,7 +183,8 @@ plt.plot(history.history['val_loss'])
 
 plt.ylabel('Perda')
 plt.xlabel('Época')
-plt.legend(['Treinamento', 'Validação'], loc='upper right')
+plt.legend(['Treinamento', 'Validação'])
+plt.savefig('loss_plot.png')
 plt.show()
 
 plt.plot(history.history['accuracy'])
@@ -189,8 +192,9 @@ plt.plot(history.history['val_accuracy'])
 plt.title('Acurácia')
 plt.ylabel('Acurácia')
 plt.xlabel('Épocas')
-plt.legend(['Treinamento', 'Validação'], loc='upper left')
+plt.legend(['Treinamento', 'Validação'])
 plt.grid(True)
+plt.savefig('accuracy_plot.png')
 plt.show()
 plt.close()
 
@@ -232,6 +236,7 @@ preds_ = [np.argmax(x) for x in preds]
 
 cm = confusion_matrix(y_test_, preds_)
 plot_confusion_matrix(cm, classes=['Glioma', 'Meningloma', 'No Tumor', 'Pituitary'], title='Confusion matrix')
+plt.savefig('confusion_matrix.png')
 plt.show()
 plt.close()
 
@@ -259,4 +264,47 @@ for t in range(4):
         plt.imshow(cv2.cvtColor(x_test[i], cv2.COLOR_BGR2RGB), cmap='gray')
         plt.title('Real: {}\nPredito: {}'.format(classes[np.argmax(y_test[i])], classes[np.argmax(preds[i])]))
         plt.axis('off')
+    plt.savefig(f'test_predictions_{t}.png')
     plt.show()
+
+def normalize_shap_values(shap_values, epsilon=1e-8):
+    normalized_shap = []
+    for val in shap_values:
+        min_val = np.min(val)
+        max_val = np.max(val)
+        # Evitar divisão por zero
+        range_val = max_val - min_val + epsilon
+        normalized_shap.append((val - min_val) / range_val)  # Normalizar para o intervalo [0, 1]
+    return np.array(normalized_shap)
+
+# Implementação do SHAP
+background = x_train[np.random.choice(x_train.shape[0], 100, replace=False)]
+explainer = shap.GradientExplainer(model, background)
+
+# Explicar as previsões para as primeiras 10 imagens de teste
+shap_values = explainer.shap_values(x_test[:10])
+
+# Normalizar os valores SHAP para o intervalo [0, 1]
+normalized_shap_values = normalize_shap_values(shap_values)
+
+# Títulos personalizados para as imagens
+titles_left = [f"Resultado: {'Tumor' if y_test[i] == 1 else 'Normal'}" for i in range(10)]
+titles_right = ["Pixels vistos pela IA" for _ in range(len(normalized_shap_values))]
+
+# Plotar os valores SHAP para as primeiras 10 imagens de teste
+plt.figure(figsize=(15, 5))
+shap.image_plot(normalized_shap_values, x_test[:10], show=False)
+
+# Acessar os subplots (imagens da esquerda e direita para personalização)
+axes = plt.gcf().axes
+for i in range(0, len(titles_left) * 2, 2):
+    axes[i].set_title(titles_left[i // 2], fontsize=12, color="darkblue")
+
+for i in range(1, len(titles_right) * 2, 2):
+    axes[i].set_title(titles_right[i // 2], fontsize=12, color="darkred")
+
+# Título geral e legenda explicativa
+plt.suptitle('Explicabilidade para Classificação de Tumores', fontsize=16)
+plt.figtext(0.5, 0.01, "Cores mais claras indicam maior impacto positivo (rosa) e negativo (azul) na previsão", ha="center", fontsize=12)
+
+plt.show()
